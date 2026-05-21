@@ -7,7 +7,7 @@
 
 services:
   redis:
-    image: redis:8.6.2
+    image: redis:7.4-alpine
     container_name: omniroute-redis
     restart: unless-stopped
     command: redis-server --save 60 1 --loglevel warning
@@ -23,7 +23,7 @@ services:
 
   omniroute:
     container_name: omniroute
-    image: ${OMNIROUTE_IMAGE:-omniroute:local-ui-fix}
+    image: ${OMNIROUTE_IMAGE:-omniroute:latest}
     build:
       context: .
       target: ${OMNIROUTE_BUILD_TARGET:-runner-cli}

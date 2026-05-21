@@ -1233,7 +1233,7 @@ export const REGISTRY: Record<string, RegistryEntry> = {
     ],
   },
 
-  "opencode": {
+  opencode: {
     id: "opencode",
     alias: "oc",
     format: "openai",
@@ -1241,8 +1241,10 @@ export const REGISTRY: Record<string, RegistryEntry> = {
     baseUrl: "https://opencode.ai/zen/v1",
     modelsUrl: "https://opencode.ai/zen/v1/models",
     authType: "none",
+    authHeader: "none",
     defaultContextLength: 200000,
     passthroughModels: true,
+    models: [],
   },
   "opencode-zen": {
     id: "opencode-zen",

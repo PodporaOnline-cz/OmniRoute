@@ -869,13 +869,10 @@ export const APIKEY_PROVIDERS = {
     color: "#E87040",
     textIcon: "OC",
     website: "https://opencode.ai",
-    noAuth: true,
+    hasFree: true,
     authHint: "No API key required — uses OpenCode's public free endpoint.",
     freeNote:
       "No API key required — public OpenCode endpoint with Kimi, GLM, Qwen, MiMo, MiniMax models.",
-    notice: {
-      text: "OpenCode Free uses the public OpenCode endpoint (https://opencode.ai/zen/v1). No signup or API key needed. Rate limits apply.",
-    },
   },
   "opencode-zen": {
     id: "opencode-zen",
