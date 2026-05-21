@@ -1,0 +1,79 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+  push:
+    branches: [sync/upstream-main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Sync upstream/main → fork main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/diegosouzapw/OmniRoute.git
+          git fetch upstream main
+
+      - name: Check for new upstream commits
+        id: check
+        run: |
+          FORK_HASH=$(git rev-parse origin/main)
+          UPSTREAM_HASH=$(git rev-parse upstream/main)
+
+          if [ "$FORK_HASH" = "$UPSTREAM_HASH" ]; then
+            echo "No new upstream commits. Fork is up to date."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          BEHIND=$(git rev-list --count origin/main..upstream/main)
+          echo "Fork is $BEHIND commit(s) behind upstream"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+
+      - name: Create sync branch from upstream/main
+        if: steps.check.outputs.has_changes == 'true'
+        run: |
+          git checkout -b sync/upstream-main upstream/main
+          git push origin sync/upstream-main --force
+
+      - name: Open or update sync PR
+        if: steps.check.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          EXISTING_PR=$(gh pr list \
+            --head sync/upstream-main \
+            --base main \
+            --state open \
+            --json number,title \
+            --jq '.[0].number // empty')
+
+          BEHIND="${{ steps.check.outputs.behind }}"
+          COMMITS=$(git log --oneline origin/main..upstream/main | head -20)
+          BODY="Upstream \`diegosouzapw/OmniRoute\` has **$BEHIND new commit(s)** on \`main\` not yet merged.\n\n<details><summary>Commits</summary>\n\n\`\`\`\n$COMMITS\n\`\`\`\n\n</details>"
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing PR #$EXISTING_PR"
+            gh pr edit "$EXISTING_PR" \
+              --title "chore: sync upstream ($BEHIND new commit(s))" \
+              --body "$BODY"
+          else
+            echo "Creating new PR"
+            gh pr create \
+              --head sync/upstream-main \
+              --base main \
+              --title "chore: sync upstream ($BEHIND new commit(s))" \
+              --body "$BODY"
+          fi
