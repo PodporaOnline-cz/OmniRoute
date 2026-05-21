@@ -28,8 +28,10 @@ jobs:
 
       - name: Set image tag
         id: meta
+        env:
+          INPUT_TAG: ${{ inputs.image_tag }}
         run: |
-          TAG="${{ inputs.image_tag }}"
+          TAG="${INPUT_TAG}"
           if [ -z "$TAG" ]; then TAG="${GITHUB_SHA}"; fi
           echo "image=${IMAGE_NAME}:${TAG}" >> "$GITHUB_OUTPUT"
 
