@@ -6,6 +6,7 @@ import {
 } from "@/lib/compliance/providerAudit";
 import {
   getProviderConnections,
+  ensureNoAuthProviderConnection,
   createProviderConnection,
   deleteProviderConnections,
   getProviderNodeById,
@@ -15,6 +16,8 @@ import {
   isClaudeCodeCompatibleProvider,
   isOpenAICompatibleProvider,
   isAnthropicCompatibleProvider,
+  FREE_PROVIDERS,
+  resolveProviderId,
 } from "@/shared/constants/providers";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { syncToCloud } from "@/lib/cloudSync";
@@ -35,6 +38,17 @@ export async function GET(request: Request) {
   if (authError) return authError;
 
   try {
+    const { searchParams } = new URL(request.url);
+    const ensureNoAuthProvider = searchParams.get("ensureNoAuthProvider");
+    if (ensureNoAuthProvider) {
+      const resolvedId = resolveProviderId(ensureNoAuthProvider);
+      if (
+        (FREE_PROVIDERS as Record<string, { noAuth?: boolean } | undefined>)[resolvedId]?.noAuth
+      ) {
+        await ensureNoAuthProviderConnection(resolvedId);
+      }
+    }
+
     const connections = await getProviderConnections();
     const revealKeys = isApiKeyRevealEnabled();
 

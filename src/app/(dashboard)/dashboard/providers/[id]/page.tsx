@@ -1276,8 +1276,11 @@ export default function ProviderDetailPage() {
 
   const fetchConnections = useCallback(async () => {
     try {
+      const providersUrl = isFreeNoAuth
+        ? `/api/providers?ensureNoAuthProvider=${encodeURIComponent(providerId)}`
+        : "/api/providers";
       const [connectionsRes, nodesRes] = await Promise.all([
-        fetch("/api/providers", { cache: "no-store" }),
+        fetch(providersUrl, { cache: "no-store" }),
         fetch("/api/provider-nodes", { cache: "no-store" }),
       ]);
       const connectionsData = await connectionsRes.json();
@@ -1311,7 +1314,7 @@ export default function ProviderDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [providerId, isCompatible]);
+  }, [providerId, isCompatible, isFreeNoAuth]);
 
   const handleUpdateNode = async (formData) => {
     try {
@@ -3527,7 +3530,13 @@ export default function ProviderDetailPage() {
       )}
 
       {/* Connections */}
-      {!isUpstreamProxyProvider && isFreeNoAuth && <NoAuthProviderCard />}
+      {!isUpstreamProxyProvider && isFreeNoAuth && (
+        <NoAuthProviderCard
+          providerId={providerId}
+          providerName={providerInfo?.name}
+          onProxySaved={fetchConnections}
+        />
+      )}
       {!isUpstreamProxyProvider && !isFreeNoAuth && (
         <Card>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

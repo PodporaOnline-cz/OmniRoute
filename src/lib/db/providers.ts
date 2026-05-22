@@ -146,6 +146,60 @@ export async function getProviderConnectionById(id: string) {
   );
 }
 
+export async function ensureNoAuthProviderConnection(providerId: string) {
+  const normalizedProviderId = providerId.trim();
+  if (!normalizedProviderId) {
+    throw new Error("providerId is required");
+  }
+
+  const db = getDbInstance() as unknown as DbLike;
+  const connectionId = `noauth:${normalizedProviderId}`;
+  const now = new Date().toISOString();
+  const existing = await getProviderConnectionById(connectionId);
+
+  if (!existing) {
+    const max = db
+      .prepare("SELECT MAX(priority) as maxP FROM provider_connections WHERE provider = ?")
+      .get(normalizedProviderId) as JsonRecord | undefined;
+    const maxPriority = toNumberOrZero(toRecord(max).maxP);
+    const connection: JsonRecord = {
+      id: connectionId,
+      provider: normalizedProviderId,
+      authType: "free",
+      name: `${normalizedProviderId} (No Auth)`,
+      priority: maxPriority + 1,
+      isActive: true,
+      testStatus: "active",
+      providerSpecificData: {},
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    _insertConnectionRow(db, encryptConnectionFields({ ...connection }));
+    _reorderConnections(db, normalizedProviderId);
+    backupDbFile("pre-write");
+    invalidateDbCache("connections");
+
+    return getProviderConnectionById(connectionId);
+  }
+
+  const updates: JsonRecord = {};
+  if (existing.provider !== normalizedProviderId) updates.provider = normalizedProviderId;
+  if (existing.authType !== "free") updates.authType = "free";
+  if (!existing.name) updates.name = `${normalizedProviderId} (No Auth)`;
+  if (existing.isActive !== true) updates.isActive = true;
+  if (!existing.testStatus) updates.testStatus = "active";
+  if (!existing.providerSpecificData || typeof existing.providerSpecificData !== "object") {
+    updates.providerSpecificData = {};
+  }
+
+  if (Object.keys(updates).length > 0) {
+    return updateProviderConnection(connectionId, updates);
+  }
+
+  return existing;
+}
+
 export async function createProviderConnection(data: JsonRecord) {
   const db = getDbInstance() as unknown as DbLike;
   const now = new Date().toISOString();

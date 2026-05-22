@@ -1,6 +1,7 @@
 import { randomUUID, createHash } from "crypto";
 import {
   getProviderConnections,
+  ensureNoAuthProviderConnection,
   validateApiKey,
   updateProviderConnection,
   getSettings,
@@ -792,10 +793,15 @@ export async function getProviderCredentials(
   try {
     await currentMutex;
 
-    // noAuth free providers (e.g. opencode) need no DB connection — return synthetic credentials
-    // so the executor receives a valid credentials object without auth headers being added.
+    // noAuth free providers (e.g. opencode) use a deterministic synthetic DB connection
+    // so model sync, proxy resolution, usage tracking, and dashboard state share one ID.
     const resolvedId = resolveProviderId(provider);
     if ((FREE_PROVIDERS as Record<string, { noAuth?: boolean } | undefined>)[resolvedId]?.noAuth) {
+      const connection = await ensureNoAuthProviderConnection(resolvedId);
+      const connectionId =
+        typeof connection?.id === "string" && connection.id.length > 0
+          ? connection.id
+          : `noauth:${resolvedId}`;
       return {
         apiKey: null,
         accessToken: null,
@@ -803,8 +809,8 @@ export async function getProviderCredentials(
         expiresAt: null,
         projectId: null,
         copilotToken: null,
-        providerSpecificData: {},
-        connectionId: "noauth",
+        providerSpecificData: (connection?.providerSpecificData ?? {}) as JsonRecord,
+        connectionId,
         testStatus: "active",
         lastError: null,
         lastErrorType: null,

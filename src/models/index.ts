@@ -2,6 +2,7 @@
 export {
   getProviderConnections,
   getProviderConnectionById,
+  ensureNoAuthProviderConnection,
   createProviderConnection,
   updateProviderConnection,
   deleteProviderConnection,
