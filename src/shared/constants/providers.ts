@@ -867,7 +867,7 @@ export const APIKEY_PROVIDERS = {
     name: "OpenCode Free",
     icon: "terminal",
     color: "#E87040",
-    textIcon: "OC",
+    textIcon: "OF",
     website: "https://opencode.ai",
     hasFree: true,
     authHint: "No API key required — uses OpenCode's public free endpoint.",
