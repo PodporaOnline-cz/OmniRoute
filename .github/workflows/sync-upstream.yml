@@ -62,7 +62,7 @@ jobs:
 
           BEHIND="${{ steps.check.outputs.behind }}"
           COMMITS=$(git log --oneline origin/main..upstream/main | head -20)
-          BODY="Upstream \`diegosouzapw/OmniRoute\` has **$BEHIND new commit(s)** on \`main\` not yet merged.\n\n<details><summary>Commits</summary>\n\n\`\`\`\n$COMMITS\n\`\`\`\n\n</details>"
+          BODY=$(printf 'Upstream `diegosouzapw/OmniRoute` has **%s new commit(s)** on `main` not yet merged.\n\n<details><summary>Commits</summary>\n\n```\n%s\n```\n\n</details>' "$BEHIND" "$COMMITS")
 
           if [ -n "$EXISTING_PR" ]; then
             echo "Updating existing PR #$EXISTING_PR"
