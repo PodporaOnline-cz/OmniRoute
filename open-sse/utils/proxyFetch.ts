@@ -149,20 +149,27 @@ export function resolveProxyForRequest(targetUrl) {
 
   // Always bypass proxy for local/LAN addresses
   if (target && isLocalAddress(target.hostname.toLowerCase())) {
-    return { source: "direct", proxyUrl: null };
+    return { source: "direct", proxyUrl: null, relayUrl: null };
   }
 
   const contextProxy = proxyContext.getStore();
   if (contextProxy) {
-    return { source: "context", proxyUrl: proxyConfigToUrl(contextProxy) };
+    // Relay proxy (Cloudflare/Vercel Workers) — rewrite URL via headers
+    if (typeof contextProxy === "object" && contextProxy !== null) {
+      const ctx = contextProxy as Record<string, unknown>;
+      if (ctx.relayUrl && typeof ctx.relayUrl === "string" && ctx.relayUrl.length > 0) {
+        return { source: "relay", proxyUrl: null, relayUrl: ctx.relayUrl };
+      }
+    }
+    return { source: "context", proxyUrl: proxyConfigToUrl(contextProxy), relayUrl: null };
   }
 
   const envProxyUrl = resolveEnvProxyUrl(targetUrl);
   if (envProxyUrl) {
-    return { source: "env", proxyUrl: envProxyUrl };
+    return { source: "env", proxyUrl: envProxyUrl, relayUrl: null };
   }
 
-  return { source: "direct", proxyUrl: null };
+  return { source: "direct", proxyUrl: null, relayUrl: null };
 }
 
 function getTargetUrl(input) {
@@ -231,7 +238,20 @@ async function patchedFetch(
     console.error(`[ProxyFetch] Proxy configuration error: ${message}`);
     throw error;
   }
-  const { source, proxyUrl } = resolved;
+  const { source, proxyUrl, relayUrl } = resolved;
+
+  if (relayUrl) {
+    // Relay proxy (Cloudflare/Vercel Workers) — rewrite request URL and headers
+    const parsed = new URL(targetUrl);
+    const relayHeaders = new Headers(options.headers || {});
+    relayHeaders.set("x-relay-target", `${parsed.protocol}//${parsed.host}`);
+    relayHeaders.set("x-relay-path", `${parsed.pathname}${parsed.search}`);
+    relayHeaders.delete("host");
+    // Remove host header and content-length (let fetch handle it)
+    const relayInit = { ...options, headers: relayHeaders, host: undefined };
+    const _relayFetch = deps.undiciFetch ?? (undiciFetch as unknown as (...args: unknown[]) => Promise<Response>);
+    return _relayFetch(relayUrl, relayInit);
+  }
 
   if (!proxyUrl) {
     // TLS fingerprint spoofing for direct connections (no proxy configured)

@@ -11,6 +11,16 @@ export {
   getProviderConnections,
   getProviderConnectionById,
   ensureNoAuthProviderConnection,
+
+  // Proxy Pools
+  getProxyPools,
+  getProxyPoolById,
+  createProxyPool,
+  updateProxyPool,
+  deleteProxyPool,
+  testProxyPoolUrl,
+  resolvePoolProxyConfig,
+
   createProviderConnection,
   updateProviderConnection,
   deleteProviderConnection,
