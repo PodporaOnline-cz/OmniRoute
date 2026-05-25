@@ -166,6 +166,16 @@ const CLI_TOOLS: Record<string, any> = {
       env: ".qwen/.env",
     },
   },
+  commandcode: {
+    defaultCommand: "cmd",
+    envBinKey: "CLI_COMMANDCODE_BIN",
+    requiresBinary: true,
+    healthcheckTimeoutMs: 12000,
+    paths: {
+      config: ".config/commandcode/config.json",
+      auth: ".config/commandcode/auth.json",
+    },
+  },
   "gemini-cli": {
     defaultCommand: "gemini",
     envBinKey: "CLI_GEMINI_BIN",
