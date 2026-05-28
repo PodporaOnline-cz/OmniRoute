@@ -861,19 +861,6 @@ export const APIKEY_PROVIDERS = {
     website: "https://open.bigmodel.cn",
     apiHint: "API key from https://open.bigmodel.cn/usercenter/apikeys",
   },
-  opencode: {
-    id: "opencode",
-    alias: "oc",
-    name: "OpenCode Free",
-    icon: "terminal",
-    color: "#E87040",
-    textIcon: "OF",
-    website: "https://opencode.ai",
-    hasFree: true,
-    authHint: "No API key required — uses OpenCode's public free endpoint.",
-    freeNote:
-      "No API key required — public OpenCode endpoint with Kimi, GLM, Qwen, MiMo, MiniMax models.",
-  },
   "opencode-zen": {
     id: "opencode-zen",
     alias: "opencode-zen",
