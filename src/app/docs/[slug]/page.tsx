@@ -8,7 +8,7 @@ import matter from "gray-matter";
 import { marked } from "marked";
 import DOMPurify from "isomorphic-dompurify";
 import { Metadata } from "next";
-import { getLocale } from "next-intl/server";
+import { DEFAULT_LOCALE } from "@/i18n/config";
 import { DocCodeBlocks } from "../components/DocCodeBlocks";
 import { FeedbackWidget } from "../components/FeedbackWidget";
 import { DocsPageAnalytics } from "../components/DocsPageAnalytics";
@@ -167,13 +167,14 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
   let mermaidCharts: string[] = [];
 
   try {
-    // Resolve the current request locale via next-intl. When it isn't `en`
-    // and a translated copy exists under `docs/i18n/<locale>/docs/<file>`,
-    // prefer the translated file. Otherwise fall back to the English source.
+    // Static docs prerender must not read request cookies/headers. Use the
+    // configured default locale only; if that locale has translated docs under
+    // `docs/i18n/<locale>/docs/<file>`, prefer them, otherwise fall back to the
+    // English source.
     // Path resolution is hardened: the docs index supplies the safe filename
     // (never user input), and we constrain the resolved path to the docs
     // root so traversal sequences in a stray fileName cannot escape it.
-    const locale = await getLocale();
+    const locale = DEFAULT_LOCALE;
     const docsRoot = path.resolve(process.cwd(), "docs");
     const englishAbs = path.resolve(docsRoot, item.fileName);
     if (!englishAbs.startsWith(docsRoot + path.sep) && englishAbs !== docsRoot) {
@@ -189,9 +190,13 @@ export default async function DocPage({ params }: { params: Promise<{ slug: stri
     }
     const fileContent = fs.readFileSync(sourceAbs, "utf8");
     const { content, data: frontmatter } = matter(fileContent);
-    pageTitle = (frontmatter.title as string) || item.title;
-    version = (frontmatter.version as string) || null;
-    lastUpdated = (frontmatter.lastUpdated as string) || null;
+    pageTitle = String(frontmatter.title || item.title);
+    version = frontmatter.version ? String(frontmatter.version) : null;
+    lastUpdated = frontmatter.lastUpdated
+      ? frontmatter.lastUpdated instanceof Date
+        ? frontmatter.lastUpdated.toISOString().slice(0, 10)
+        : String(frontmatter.lastUpdated)
+      : null;
     mermaidCharts = extractMermaidCharts(content);
     headings = extractHeadings(content);
     htmlContent = renderMarkdown(content);

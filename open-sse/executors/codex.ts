@@ -398,7 +398,10 @@ function stripStoredItemReferences(body: Record<string, unknown>): void {
       .map((functionCall) => ({
         type: "function_call",
         call_id: functionCall.call_id,
-        name: functionCall.name,
+        name:
+          typeof functionCall.name === "string"
+            ? functionCall.name.slice(0, 128)
+            : functionCall.name,
         arguments: functionCall.arguments,
       }));
 
@@ -579,7 +582,7 @@ function normalizeCodexTools(body: Record<string, unknown>): void {
         for (const st of tool.tools as unknown[]) {
           if (st && typeof st === "object" && !Array.isArray(st)) {
             const subTool = st as Record<string, unknown>;
-            const name = typeof subTool.name === "string" ? subTool.name.trim() : "";
+            const name = typeof subTool.name === "string" ? subTool.name.trim().slice(0, 128) : "";
             if (name) validToolNames.add(name);
           }
         }
@@ -644,7 +647,7 @@ function normalizeCodexTools(body: Record<string, unknown>): void {
       delete tool[key];
     }
     tool.type = "function";
-    tool.name = name;
+    tool.name = name.slice(0, 128);
     if (description) tool.description = description;
     tool.parameters = parameters;
 
@@ -1190,11 +1193,21 @@ export class CodexExecutor extends BaseExecutor {
       return null;
     }
     const result = await getAccessToken("codex", credentials, log);
-    if (!result || result.error) {
+    if (!result) {
+      log?.warn?.("TOKEN_REFRESH", "Codex: token refresh failed — re-authentication required");
+      return null;
+    }
+    if (result.error) {
       log?.warn?.(
         "TOKEN_REFRESH",
-        `Codex: token refresh failed${result?.error ? ` (${result.error})` : ""} — re-authentication required`
+        `Codex: token refresh failed (${result.error}) — re-authentication required`
       );
+      // Return null (not the error-only object): base.ts spreads any truthy
+      // result onto activeCredentials and persists it via onCredentialsRefreshed.
+      // Spreading `{ error }` would keep the stale/expired accessToken in place
+      // and write garbage to the connection. Returning null leaves the original
+      // credentials untouched so the upstream 401/403 drives the proper
+      // re-auth / mark-expired path instead.
       return null;
     }
     return result;
@@ -1381,15 +1394,13 @@ export class CodexExecutor extends BaseExecutor {
     const fallbackReasoningEffort = allowConnectionReasoningDefaults
       ? requestDefaults.reasoningEffort || "medium"
       : undefined;
+    // Issue #2331: model suffix aliases (for example gpt-5.5-xhigh) represent an
+    // explicit model selection, so they must override client-injected defaults such
+    // as OpenCode's automatic reasoning.effort=medium for GPT-5-family requests.
     const rawEffort =
-      explicitReasoning || requestReasoningEffort || modelEffort || fallbackReasoningEffort;
+      modelEffort || explicitReasoning || requestReasoningEffort || fallbackReasoningEffort;
 
-    if (explicitReasoning) {
-      body.reasoning = {
-        ...(reasoningRecord || {}),
-        effort: clampEffort(cleanModel, explicitReasoning),
-      };
-    } else if (rawEffort) {
+    if (rawEffort) {
       body.reasoning = {
         ...(reasoningRecord || {}),
         effort: clampEffort(cleanModel, rawEffort),

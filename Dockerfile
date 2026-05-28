@@ -1,4 +1,4 @@
-FROM node:26.1.0-trixie-slim AS builder
+FROM node:26.2.0-trixie-slim AS builder
 WORKDIR /app
 
 RUN apt-get update \
@@ -19,7 +19,7 @@ RUN if [ -f package-lock.json ]; then \
 COPY . ./
 RUN mkdir -p /app/data && npm run build -- --webpack
 
-FROM node:26.1.0-trixie-slim AS runner-base
+FROM node:26.2.0-trixie-slim AS runner-base
 WORKDIR /app
 
 LABEL org.opencontainers.image.title="omniroute" \
@@ -81,4 +81,4 @@ RUN apt-get update \
   && git config --system url."https://github.com/".insteadOf "ssh://git@github.com/"
 
 # Install CLI tools globally. Separate layer from apt for better cache reuse.
-RUN npm install -g --no-audit --no-fund   @openai/codex   @anthropic-ai/claude-code   opencode-ai   @google/gemini-cli   droid   openclaw@latest
+RUN npm install -g --no-audit --no-fund   @openai/codex   @anthropic-ai/claude-code   opencode-ai   @google/gemini-cli   droid   openclaw@latest   command-code@latest

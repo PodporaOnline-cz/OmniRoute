@@ -6,6 +6,26 @@
 
 ## [Unreleased]
 
+## [3.8.1] — 2026-05-20
+
+### 🔧 Bug Fixes & Refactors
+
+- **fix(translator):** treat `developer` role as system in OpenAI → Claude translation — `openAIToClaude` now extracts `developer`-role messages into `systemParts` (same as `system`) and filters them from the non-system message list, preventing identity context injected via the Responses API `developer` role from silently becoming an assistant turn when routing to a Claude-format provider. ([#2407](https://github.com/diegosouzapw/OmniRoute/issues/2407))
+- **fix(antigravity):** deduplicate `removeHeaderCaseInsensitive` — export canonical implementation from `antigravityClientProfile.ts` and remove the local copy in `antigravity.ts`; export `AntigravityCredentialsLike` type for cross-module use. (#2433 — thanks @Gi99lin)
+
+### 🔒 Security Fixes
+
+- **fix(security):** replace execSync string-template with spawnSync arg-array in plugin.mjs — eliminates shell command injection.
+- **fix(security):** gate Electron CSP unsafe-eval on !app.isPackaged — was leaking unsafe-eval into production builds.
+- **fix(api):** add requireManagementAuth to /api/usage/budget/bulk and /api/resilience/reset.
+- **fix(security):** route catch-block error messages through sanitizeErrorMessage() in executors and API routes.
+- **fix(codex):** refreshCredentials returns null on token refresh failure.
+- **fix(tokenRefresh):** safe unknown-error access in catch block.
+- **fix(combo):** reset exhaustedProviders set at start of each set-retry iteration.
+- **fix(circuitBreaker):** persist and restore lastFailureKind via options JSON column.
+
+---
+
 ## [3.8.0] — 2026-05-06
 
 ### ✨ New Features
@@ -1626,7 +1646,7 @@ We identified that **155 community PRs** across the entire project history (from
 - **feat(ui):** Implement on-demand per-model testing in the provider dashboard, allowing single-token diagnostic checks without triggering rate-limits (Issue #1532).
 
 - **Detailed Token Tracking:** Added granular token breakdown columns (cache read, cache write, reasoning) to call logs with proper null vs zero distinction. Includes DB migration 018 and 5-label UI display per provider capability (#1017 — thanks @rdself).
-- **Legacy JSON Config Import/Export:** Restored JSON-based settings export and import for migration from legacy 9router configurations. Security-hardened with Zero-Trust redaction of passwords and `requireLogin` fields, and automatic pre-import database backups (#1012 — thanks @luandiasrj).
+- **Legacy JSON Config Import/Export:** Restored JSON-based settings export and import for migration from legacy configurations. Security-hardened with Zero-Trust redaction of passwords and `requireLogin` fields, and automatic pre-import database backups (#1012 — thanks @luandiasrj).
 - **Non-Stream Aliases:** Added API support for explicit non-streaming aliases (`non_stream`, `disable_stream`, `disable_streaming`, `streaming=false`), normalized at the boundary before provider translation (#1036 — thanks @wlfonseca).
 - **Russian Dashboard Localization:** Comprehensive Russian translation for the dashboard UI, including fixes for 2 Ukrainian locale keys (#1003 — thanks @mercs2910).
 
