@@ -861,14 +861,6 @@ export const APIKEY_PROVIDERS = {
     website: "https://open.bigmodel.cn",
     apiHint: "API key from https://open.bigmodel.cn/usercenter/apikeys",
   },
-  "opencode-zen": {
-    id: "opencode-zen",
-    alias: "opencode-zen",
-    name: "OpenCode Zen",
-    icon: "opencode",
-    color: "#6366f1",
-    website: "https://opencode.ai/zen",
-  },
   "opencode-go": {
     id: "opencode-go",
     alias: "opencode-go",
